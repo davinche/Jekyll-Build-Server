@@ -3,7 +3,7 @@ Jekyll Static Site Server
 
 My first Golang project. Inspired by [Hacking with Andrew and Brad - tip.golang.org](https://www.youtube.com/watch?v=1rZ-JorHJEY),
 this Go fileserver serves my site from two folders: "BUILD_A" and "BUILD_B".
-Git webhooks to trigger the update routine: it checks the hash of the latest commits to determine whether or not the site needs to be rebuilt.
+When I author a new post, Git webhooks is used to trigger the update routine. The routine checks for new commit hashes and rebuilds the site if new hashes were observed.
 
 It works like this:
 
