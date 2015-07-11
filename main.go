@@ -78,30 +78,31 @@ func main() {
 		settings.App.Remote.Password,
 	)
 
-	// Make sure the build folders exist, if not create them
+	// Make sure the build folders exist
 	err = initStaticDirectories()
 	if err != nil {
 		log.Fatal("Could not init Build Directories")
 	}
 
-	// Update Jekyll Site
+	// Get updated Jekyll Site
 	err = updateRepo(jekyllRepo, SITE_DIR)
 	if err != nil {
 		log.Fatal("Could not update from Jekyll Repo")
 	}
 
-	// Get Updated Posts
+	// Get updated posts
 	err = updateRepo(postsRepo, POSTS_REPO_DIR)
 	if err != nil {
 		log.Fatal("Could not update from Posts Repo")
 	}
 
+	// Track the jekyll repo's latest hash
 	currentSiteHash, err = getMasterHash(SITE_DIR)
 	if err != nil {
 		log.Fatal("Could not get SHA1 hash of origin/master from Site Repo")
 	}
 
-	// Get the current hash of posts
+	// Track the posts repo's latest hash
 	currentPostsHash, err = getMasterHash(POSTS_REPO_DIR)
 	if err != nil {
 		log.Fatal("Could not get SHA1 hash of origin/master from Posts Repo")
@@ -124,13 +125,15 @@ func main() {
 	buildAFileServer = http.FileServer(http.Dir("./" + BUILD_A))
 	buildBFileServer = http.FileServer(http.Dir("./" + BUILD_B))
 
-	// Set up our current build
+	// We initially build into "BUILD_A" folder
 	currentBuild = BUILD_A
 	currentServer.Server = buildAFileServer
 
 	// Serve the site
 	mux := http.NewServeMux()
 	mux.Handle("/", &currentServer)
+
+	// Our endpoint to handle git webhook
 	mux.HandleFunc("/__updateposts__", handleGitWebhook)
 	http.ListenAndServe(":8080", mux)
 }
@@ -138,7 +141,8 @@ func main() {
 func handleGitWebhook(w http.ResponseWriter, r *http.Request) {
 	mu.Lock()
 	defer mu.Unlock()
-	// First we update the Jekyll repo
+
+	// Get up-to-date jekyll site + posts
 	err := updateRepo(jekyllRepo, SITE_DIR)
 	if err != nil {
 		log.Printf("Could not update Jekyll Repo: %v", err)
@@ -146,7 +150,6 @@ func handleGitWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// First we update the Posts repo
 	err = updateRepo(postsRepo, POSTS_REPO_DIR)
 	if err != nil {
 		log.Printf("Could not update Posts Repo: %v", err)
@@ -154,7 +157,7 @@ func handleGitWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get the origin/master hash and compare it with the current hash
+	// Get the latest origin/master hashes
 	postsHash, err := getMasterHash(POSTS_REPO_DIR)
 	if err != nil {
 		log.Printf("Could not get updated post hash: %v", err)
@@ -162,7 +165,6 @@ func handleGitWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get the origin/master hash and compare it with the current hash
 	siteHash, err := getMasterHash(SITE_DIR)
 	if err != nil {
 		log.Printf("Could not get updated site hash: %v", err)
@@ -192,8 +194,8 @@ func handleGitWebhook(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Build was successful; we update the current hash and
-		// switch the over to the other file server
+		// Build was successful; we update the current hash to track
+		// the new hashes and begin serving the site from the new build folder
 		currentPostsHash = postsHash
 		currentSiteHash = siteHash
 		if currentBuild == BUILD_A {
@@ -222,8 +224,7 @@ func readSettings() (err error) {
 		return err
 	}
 
-	// Checkif there is a settings.yml to read
-
+	// Check if there is a settings.yml to read (for overrides)
 	if _, err := os.Stat(SETTINGS_PATH); err == nil {
 		fileSettings, err := ioutil.ReadFile(SETTINGS_PATH)
 		if err != nil {
@@ -328,7 +329,7 @@ func symlinkDirs() (err error) {
 	return nil
 }
 
-// Get the hash of origin/master for Posts REPO
+// Get the hash of origin/master for a repo
 func getMasterHash(repoDir string) (hash string, err error) {
 	cmd := exec.Command("git", "rev-parse", "origin/master")
 	cmd.Dir = repoDir
