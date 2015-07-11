@@ -1,0 +1,6 @@
+app:
+  remote:
+    site_repo: "https://%s:%s@bitbucket.org/<your_username>/jekyll.git"
+    posts_repo: "https://%s:%s@bitbucket.org/<your_username>/posts.git"
+    username: ""
+    password: ""
