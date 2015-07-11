@@ -2,16 +2,18 @@ Jekyll Static Site Server
 =========================
 
 My first Golang project. Inspired by [Hacking with Andrew and Brad - tip.golang.org](https://www.youtube.com/watch?v=1rZ-JorHJEY),
-this GO fileserver serves my site from two folders; "BUILD_A" and "BUILD_B".
-Using Git (or bitbucket) webhooks to trigger the git update process,
-it checks the hash of the latest commits to determine when to rebuild the site.
+this Go fileserver serves my site from two folders: "BUILD_A" and "BUILD_B".
+Git webhooks to trigger the update routine: it checks the hash of the latest commits to determine whether or not the site needs to be rebuilt.
 
-Serve from BUILD A -> New Post -> Webhooks -> Build into BUILD_B -> Serve site from BUILD_B
+It works like this:
+
+Build/Serve site from BUILD A -> New Post -> (git push) -> Webhooks -> Build into BUILD_B -> Serve site from BUILD_B
 
 ## Usage
 
-You may want to modify some of the code on how it updates to fit your needs. I separated my Jekyll site and posts into
-two different repos; you may want to have everything in one repo.
+You may want to modify some of the code on how it updates to fit your needs. I separated my Jekyll site and posts into two different repos; you may want to have everything in one repo.
+
+Change the repo strings in the `defaults.yml` file. Add your credentials in a `settings.yml` file (which overrides defaults).
 
 To build, use the included Dockerfile and run `docker build .` in the directory.
 
